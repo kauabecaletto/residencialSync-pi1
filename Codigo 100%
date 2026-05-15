@@ -1,0 +1,263 @@
+
+nome_logado=0
+
+def ondeEsta (nom,cadastrados):
+    inicio=0
+    final =len(cadastrados)-1
+    
+    while inicio<=final:
+        meio=(inicio+final)//2
+        
+        if nom.upper()==cadastrados[meio][0].upper():
+            return [True,meio]
+        elif nom.upper()<cadastrados[meio][0].upper():
+            final=meio-1
+        else: # nom.upper()>cadastrados[meio][0].upper()
+            inicio=meio+1
+            
+    return [False,inicio]
+   
+
+
+
+def cadastrar(cadastrados):
+    
+    
+        chave_para_digitar_ate_acertar_ligada=True
+        while chave_para_digitar_ate_acertar_ligada:
+            nome=input('Nome: ')
+            senha=input('Senha: ')
+        
+            resposta=ondeEsta(nome,cadastrados)
+            achou   = resposta[0]
+            posicao = resposta[1]
+        
+            if achou:
+                print ('Pessoa já cadastrada; tente novamente!')
+            else:
+             chave_para_digitar_ate_acertar_ligada=False
+             contato=[nome,senha]
+             cadastrados.insert(posicao,contato)
+             print('Cadastro realizado com sucesso!\n')
+             
+             
+# login utilizando busca linear, sem a funcao onde ondeEsta
+def login(cadastrados):
+    nome_tentativa=input("Digite seu nome cadastrado: ")
+    senha_tentativa=input("\nDigite sua senha cadastrada: ")
+    posicao=0
+    
+    while len(cadastrados)>posicao:
+        
+        if cadastrados[posicao][0].upper() != nome_tentativa.upper():
+            posicao+=1
+        else:
+            break
+        
+    if posicao==len(cadastrados):
+        print("usuario inexistente")
+        return
+
+    if cadastrados[posicao][1]!= senha_tentativa:
+        print("alguma credencial errada")
+        return False
+            
+    else:
+        global nome_logado
+        nome_logado=nome_tentativa
+        print('login efetuado\n')
+        return True
+
+
+solicitacoes=[]
+nova_solicitacao=[]
+ID=0
+
+
+    
+        
+#a funcao Adicionar_solicitacao trabalha da seguinte forma
+#o tipo de problema e definido e o nivel, logo depopis a variavel nova_solicitacao
+#e criada e dada um valor e retornando esse valor para o uso dela futuramente
+
+def Adicionar_solicitacao():
+    
+    print("1:hidraulico\n2:Eletrico\n3:Vazamento de gas\n4:Infraestrutura\n5:Outro\n")
+    chave_nivel=True
+    while chave_nivel:
+        try:
+            tipo=int(input("qual o problema\n"))
+        except ValueError:
+                print("Digite um número válido")
+                continue
+        if tipo==1:
+            tipo="hidraulico"
+            chave_nivel=False
+            continue
+        elif tipo==2:
+            tipo="Eletrico"
+            chave_nivel=False
+            continue 
+        elif tipo==3:
+            tipo="Vazamento de gas"
+            chave_nivel=False
+            continue
+        elif tipo==4:
+            tipo="Infraestrutura"
+            chave_nivel=False
+            continue
+        elif tipo==5:
+            chave_nivel=False
+            tipo="Outro"
+            continue
+        else:
+            print("problema invalido")
+    chave_nivel=True
+    while chave_nivel:
+        nivel=int(input('qual o nivel avaliado do problema 1-5?\n'))
+        if nivel==1:
+            nivel="leve"
+            chave_nivel=False
+            continue
+        elif nivel==2:
+            nivel="moderada"
+            chave_nivel=False
+            continue
+        elif nivel==3:
+            nivel="preocupante"
+            chave_nivel=False
+            continue
+        elif nivel==4:
+            nivel="Grave"
+            chave_nivel=False
+            continue
+        elif nivel==5:
+            nivel="Urgente!"
+            chave_nivel=False
+            continue
+        else:
+            print("nivel invalido")
+    nova_solicitacao = [ID,nome_logado, tipo, nivel]
+    print('solicitacao adicionada')
+    return nova_solicitacao
+
+
+
+def excluir_Solicitacoes(solicitacoes):
+    excluir=0
+    posicao=0
+    
+    if len(solicitacoes)<1:
+        print("Nao tem nenhuma solicitacao em aberto")
+        return
+    print(solicitacoes)
+    
+    try:
+        excluir=int(input("digite o id da solicitacao que deseja excluir\n"))
+    except ValueError:
+          return print("id invalido")
+            
+    while len(solicitacoes)>posicao:
+        if excluir!=solicitacoes[posicao][0]:
+            posicao+=1
+            
+            
+            
+        else:
+            solicitacoes.remove(solicitacoes[posicao])
+            print("solicitacao excluida")
+            return solicitacoes
+        
+        
+        
+    if posicao==len(solicitacoes):
+        print("nao ha nenhuma solicitacao com esse id")
+        return solicitacoes
+        
+    
+    
+   
+   
+
+
+   
+   
+         
+            
+            
+
+
+#tem 3 opcoes principais a primeira e mais importante e adicionar uma solicitacao
+#utilizando um id unico nome_logado,tipo,nivel, sendo adicionados a variavel nova_solicitacao
+#e inseridos a lista de solicitacoes.
+#a segunda opcao sendo a de excluir alguma solicitacao no caso dela ser resolvida
+#utilizando um input pelo id da solicitacoes e uma verificacao_de_existencia/busca nas solicitacoes
+#e excluindo pelo id da solicitacao.
+#a outra opcao e somente a lista de solicitacoes atualizada
+def modificar_solicitacoes(solicitacoes): #necessario colocar um try para evitar antissses
+    #outro menu
+     chave_adicionar_solicitacoes=True
+     while chave_adicionar_solicitacoes:
+         global ID
+         print("""
+        ╔════════════════════════════════════════╗
+        ║        A R E A   L O G A D A           ║
+        ╠════════════════════════════════════════╣
+        ║  [1] Adicionar uma nova solicitacao    ║
+        ║  [2] Excluir uma solicitacao           ║
+        ║  [3] Mostrar asn solicitacoes em aberto║
+        ║  [0] Sair                              ║
+        ╚════════════════════════════════════════╝
+        """)
+         try:
+             resposta=int(input("O que deseja fazer? "))
+         except ValueError:
+             print("opcao invalida")
+         else:
+             if resposta==0:
+                 chave_adicionar_solicitacoes=False
+                 print("Programa encerrado")
+                 
+             elif resposta==1:
+                 nova_solicitacao = Adicionar_solicitacao()
+                 solicitacoes.append(nova_solicitacao)
+                 ID+=1
+             elif resposta==2:
+                 (excluir_Solicitacoes(solicitacoes)) 
+            
+               
+             elif resposta==3:
+                 print(solicitacoes)
+             else:
+                 print("opcao invalida")
+            
+cadastrados = [] 
+chave_para_Menu=True
+while chave_para_Menu: 
+        print("""
+        ╔════════════════════════════╗
+        ║     SISTEMA DE ACESSO      ║
+        ╠════════════════════════════╣
+        ║  [1] Cadastrar             ║
+        ║  [2] Login                 ║
+        ║  [0] Sair                  ║
+        ╚════════════════════════════╝
+        """)
+        try:
+            menu_resposta = int(input("\nDigite a opção desejada: "))
+        except ValueError:
+            print("opcao invalida")
+        else:
+            if menu_resposta == 1:
+                cadastrar(cadastrados)
+            
+            elif menu_resposta==2:
+                 if login(cadastrados)==True:
+                     modificar_solicitacoes(solicitacoes)
+            
+            elif menu_resposta==0:
+                 chave_para_Menu=False
+                 print("programa encerrado")
+            else:
+                 print("resposta invalida")
+            

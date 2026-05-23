@@ -1,3 +1,5 @@
+import re 
+from data import db_buscar_usuario_por_contato
 from database import *
 
 nome_logado = ""
@@ -8,24 +10,30 @@ def cadastrar():
     while chave:
         nome = input('Nome: ')
         senha = input('Senha: ')
-        contato = input('E-mail ou telefone para contato: ')
+        contato = input('E-mail: ')
 
         if not contato.strip():
-            print("O contato é obrigatório!")
+            print("O e-mail é obrigatório!")
+            continue
+
+        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', contato):
+            print("E-mail inválido!")
             continue
 
         if db_buscar_usuario_por_nome(nome):
-            print('Pessoa já cadastrada; tente novamente!')
+            print('Nome já cadastrado; tente novamente!')
+        elif db_buscar_usuario_por_contato(contato):
+            print('E-mail já cadastrado; tente novamente!')
         else:
             chave = False
             db_cadastrar_usuario(nome, senha, contato)
             print('Cadastro realizado com sucesso!\n')
              
 def login():
-    nome_tentativa = input("Digite seu nome cadastrado: ")
+    contato_tentativa = input("Digite seu e-mail cadastrado: ")
     senha_tentativa = input("\nDigite sua senha cadastrada: ")
     
-    usuario = db_buscar_usuario_por_nome(nome_tentativa)
+    usuario = db_buscar_usuario_por_contato(contato_tentativa)
     
     if usuario is None:
         print("Usuário inexistente")
@@ -45,7 +53,7 @@ def login():
 def adicionar_solicitacao():
     print("\n--- NOVA SOLICITAÇÃO ---")
     print("1: Hidráulico\n2: Elétrico\n3: Vazamento de gás\n4: Infraestrutura\n5: Outro\n")
-    
+    peso_tipo = 0
     chave_tipo = True
     while chave_tipo:
         try:
@@ -56,18 +64,23 @@ def adicionar_solicitacao():
             
         if tipo_opcao == 1:
             tipo = "Hidráulico"
+            peso_tipo = 4
             chave_tipo = False
         elif tipo_opcao == 2:
             tipo = "Elétrico"
+            peso_tipo = 3
             chave_tipo = False
         elif tipo_opcao == 3:
             tipo = "Vazamento de gás"
+            peso_tipo = 10
             chave_tipo = False
         elif tipo_opcao == 4:
             tipo = "Infraestrutura"
+            peso_tipo = 2
             chave_tipo = False
         elif tipo_opcao == 5:
             tipo = "Outro"
+            peso_tipo = 1
             chave_tipo = False
         else:
             print("Opção inválida, tenta de novo.")
@@ -107,11 +120,11 @@ def adicionar_solicitacao():
         else:
             print("Nível inválido, tenta de novo.")
 
-    if tipo == "Vazamento de gás" or (tipo == "Elétrico" and (nivel == "Grave" or nivel == "Urgente!")):
+    pontuacao = peso_tipo + nivel_opcao
+
+    if pontuacao >= 10:
         prioridade = "Alta"
-    elif nivel == "Grave" or nivel == "Urgente!":
-        prioridade = "Alta"
-    elif nivel == "Preocupante":
+    elif pontuacao >= 6:
         prioridade = "Média"
     else:
         prioridade = "Baixa"

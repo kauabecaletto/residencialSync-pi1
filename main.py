@@ -1,5 +1,4 @@
 import re 
-from data import db_buscar_usuario_por_contato
 from database import *
 
 nome_logado = ""
@@ -20,9 +19,7 @@ def cadastrar():
             print("E-mail inválido!")
             continue
 
-        if db_buscar_usuario_por_nome(nome):
-            print('Nome já cadastrado; tente novamente!')
-        elif db_buscar_usuario_por_contato(contato):
+        if db_buscar_usuario_por_contato(contato):
             print('E-mail já cadastrado; tente novamente!')
         else:
             chave = False
@@ -329,7 +326,7 @@ def modificar_solicitacoes():
                     atualizar_status()
 
             elif resposta == 5:
-                lista = db_consultar_solicitacoes(filtro_tipo="usuario", valor_filtro=id_logado)
+                lista = db_consultar_solicitacoes()
                 if len(lista) == 0:
                     print("Você não tem nenhuma solicitação registrada.")
                 else:

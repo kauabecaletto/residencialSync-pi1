@@ -1,59 +1,79 @@
+import re
 from database import *
 
+# ==========================================
+# VARIÁVEIS GLOBAIS DE SESSÃO
+# ==========================================
 nome_logado = ""
 id_logado = None
+is_admin = False
 
-def cadastrar():   
+# ==========================================
+# LÓGICA DE NEGÓCIO E MENUS (CLI)
+# ==========================================
+def cadastrar():
     chave = True
     while chave:
         nome = input('Nome: ')
         senha = input('Senha: ')
-        contato = input('E-mail ou telefone para contato: ')
+        contato = input('E-mail cadastral: ')
 
         if not contato.strip():
-            print("O contato é obrigatório!")
+            print("O e-mail é obrigatório!")
             continue
 
-        if db_buscar_usuario_por_nome(nome):
-            print('Pessoa já cadastrada; tente novamente!')
+        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', contato):
+            print("Formato de e-mail inválido!")
+            continue
+
+        if db_buscar_usuario_por_contato(contato):
+            print('Este e-mail já está em uso. Tente fazer login!')
         else:
             chave = False
             db_cadastrar_usuario(nome, senha, contato)
             print('Cadastro realizado com sucesso!\n')
-             
+
 def login():
-    nome_tentativa = input("Digite seu nome cadastrado: ")
-    senha_tentativa = input("\nDigite sua senha cadastrada: ")
-    
-    usuario = db_buscar_usuario_por_nome(nome_tentativa)
-    
+    global nome_logado, id_logado, is_admin
+
+    contato_tentativa = input("Digite seu e-mail: ")
+    senha_tentativa = input("Digite sua senha: ")
+
+    usuario = db_buscar_usuario_por_contato(contato_tentativa)
+
     if usuario is None:
-        print("Usuário inexistente")
+        print("Usuário inexistente ou e-mail incorreto.")
         return False
 
-    # usuario[0] é id, usuario[1] é nome, usuario[2] é senha
     if usuario[2] != senha_tentativa:
-        print("Alguma credencial errada")
+        print("Senha incorreta.")
         return False
     else:
-        global nome_logado, id_logado
         id_logado = usuario[0]
         nome_logado = usuario[1]
-        print('Login efetuado com sucesso!\n')
+
+        if contato_tentativa == "admin@residencial.com":
+            is_admin = True
+            nome_logado = "Administração"
+            print('\n[LOGADO COMO ADMINISTRAÇÃO]')
+        else:
+            is_admin = False
+            print(f'Login efetuado com sucesso! Bem-vindo, {nome_logado}.\n')
+
         return True
-  
+
 def adicionar_solicitacao():
     print("\n--- NOVA SOLICITAÇÃO ---")
     print("1: Hidráulico\n2: Elétrico\n3: Vazamento de gás\n4: Infraestrutura\n5: Outro\n")
-    
+
     chave_tipo = True
     while chave_tipo:
         try:
-            tipo_opcao = int(input("Qual o problema?\n"))
+            tipo_opcao = int(input("Qual a categoria do problema?\n"))
         except ValueError:
             print("Digita um número válido aí.")
             continue
-            
+
         if tipo_opcao == 1:
             tipo = "Hidráulico"
             chave_tipo = False
@@ -78,46 +98,57 @@ def adicionar_solicitacao():
         if not descricao.strip():
             print("A descrição não pode ficar em branco.")
 
-    print("\nNíveis de impacto:")
-    print("1: Leve\n2: Moderada\n3: Preocupante\n4: Grave\n5: Urgente!")
-    
-    chave_nivel = True
-    while chave_nivel:
+    print("\n--- CLASSIFICAÇÃO DE RISCO ---")
+    print("FATOR 1 - ALCANCE (Quantas áreas estão sendo afetadas?):")
+    print("1: Apenas um cômodo do meu apartamento")
+    print("2: Meu apartamento inteiro")
+    print("3: Meu andar ou corredor")
+    print("4: Um bloco inteiro")
+    print("5: O condomínio todo")
+
+    chave_urgencia = True
+    while chave_urgencia:
         try:
-            nivel_opcao = int(input('Qual o nível avaliado do problema (1-5)?\n'))
+            urgencia = int(input('Informe o Alcance (1-5): '))
+            if 1 <= urgencia <= 5:
+                chave_urgencia = False
+            else:
+                print("Número deve ser entre 1 e 5.")
         except ValueError:
             print("Digita um número válido.")
-            continue
-            
-        if nivel_opcao == 1:
-            nivel = "Leve"
-            chave_nivel = False
-        elif nivel_opcao == 2:
-            nivel = "Moderada"
-            chave_nivel = False
-        elif nivel_opcao == 3:
-            nivel = "Preocupante"
-            chave_nivel = False
-        elif nivel_opcao == 4:
-            nivel = "Grave"
-            chave_nivel = False
-        elif nivel_opcao == 5:
-            nivel = "Urgente!"
-            chave_nivel = False
-        else:
-            print("Nível inválido, tenta de novo.")
 
-    if tipo == "Vazamento de gás" or (tipo == "Elétrico" and (nivel == "Grave" or nivel == "Urgente!")):
+    print("\nFATOR 2 - TIPO DE RISCO (Qual a consequência do problema?):")
+    print("1: Apenas estético (Ex: pintura descascando)")
+    print("2: Desconforto rotineiro (Ex: lâmpada queimada, porta rangendo)")
+    print("3: Prejuízo material em andamento (Ex: cano vazando, infiltração)")
+    print("4: Risco à segurança ou saúde (Ex: fio elétrico exposto)")
+    print("5: Risco de vida ou estrutural (Ex: cheiro de gás, rachadura na coluna)")
+
+    chave_gravidade = True
+    while chave_gravidade:
+        try:
+            gravidade = int(input('Informe o Tipo de Risco (1-5): '))
+            if 1 <= gravidade <= 5:
+                chave_gravidade = False
+            else:
+                print("Número deve ser entre 1 e 5.")
+        except ValueError:
+            print("Digita um número válido.")
+
+    pontuacao = urgencia + gravidade
+
+    if tipo == "Vazamento de gás" or pontuacao >= 8:
         prioridade = "Alta"
-    elif nivel == "Grave" or nivel == "Urgente!":
-        prioridade = "Alta"
-    elif nivel == "Preocupante":
+    elif pontuacao >= 5:
         prioridade = "Média"
     else:
         prioridade = "Baixa"
 
-    if db_adicionar_solicitacao(id_logado, tipo, descricao, nivel, prioridade):
-        print(f'\n[OK] Solicitação criada! A prioridade calculada foi: {prioridade}\n')
+    nivel_formatado = f"Alcance {urgencia} | Risco {gravidade}"
+
+    id_gerado = db_adicionar_solicitacao(id_logado, tipo, descricao, nivel_formatado, prioridade)
+    if id_gerado:
+        print(f'\n[OK] Solicitação criada! ID: #{id_gerado} | Pontuação: {pontuacao} | Prioridade: {prioridade}\n')
     else:
         print('\n[Erro] Erro ao salvar no banco.\n')
 
@@ -127,13 +158,27 @@ def excluir_solicitacao():
     except ValueError:
         print("ID inválido")
         return
-            
+
+    solicitacao = db_buscar_solicitacao_por_id(excluir)
+    if solicitacao is None:
+        print("Não foi encontrada nenhuma solicitação com esse ID.")
+        return
+
+    dono_do_chamado = solicitacao[2]
+    if dono_do_chamado != id_logado and not is_admin:
+        print("Acesso Negado: Você só pode excluir suas próprias solicitações.")
+        return
+
     if db_excluir_solicitacao(excluir):
         print("Solicitação excluída com sucesso do banco de dados!")
     else:
-        print("Não foi encontrada nenhuma solicitação com esse ID.")
+        print("Erro ao excluir no banco.")
 
 def atualizar_status():
+    if not is_admin:
+        print("\n[ACESSO NEGADO] Apenas a administração pode alterar o status de um chamado.")
+        return
+
     try:
         id_sol = int(input("Digite o ID da solicitação que deseja atualizar:\n"))
     except ValueError:
@@ -149,13 +194,11 @@ def atualizar_status():
     status_atual = solicitacao[1]
     print(f"\nStatus atual: {status_atual}")
 
-    # Regra de integridade: não pode voltar atrás se já estiver Fechada
     if status_atual == "Fechada":
         print("Essa solicitação já está fechada e não pode ser alterada.")
         return
 
     print("1: Em andamento\n2: Fechada")
-
     try:
         opcao = int(input("Qual o novo status?\n"))
     except ValueError:
@@ -178,7 +221,21 @@ def atualizar_status():
 def consultas_e_estatisticas():
     chave = True
     while chave:
-        print("""
+        if is_admin:
+            print("""
+        ╔════════════════════════════════════════╗
+        ║       CONSULTAS E ESTATÍSTICAS         ║
+        ╠════════════════════════════════════════╣
+        ║  [1] Filtrar por status                ║
+        ║  [2] Filtrar por prioridade            ║
+        ║  [3] Estatísticas por status           ║
+        ║  [4] Estatísticas por prioridade       ║
+        ║  [5] Filtrar por Usuário Específico    ║
+        ║  [0] Voltar                            ║
+        ╚════════════════════════════════════════╝
+        """)
+        else:
+            print("""
         ╔════════════════════════════════════════╗
         ║       CONSULTAS E ESTATÍSTICAS         ║
         ╠════════════════════════════════════════╣
@@ -217,7 +274,7 @@ def consultas_e_estatisticas():
             else:
                 print(f"\n--- SOLICITAÇÕES: {valor.upper()} ---")
                 for sol in lista:
-                    print(f"ID: {sol[0]} | Tipo: {sol[2]} | Prioridade: {sol[5]} | Data: {sol[7]}")
+                    print(f"ID: {sol[0]} | Solicitante: {sol[1]} | Tipo: {sol[2]} | Prioridade: {sol[5]} | Data: {sol[7]}")
 
         elif opcao == 2:
             print("1: Alta\n2: Média\n3: Baixa")
@@ -238,7 +295,7 @@ def consultas_e_estatisticas():
             else:
                 print(f"\n--- SOLICITAÇÕES: PRIORIDADE {valor.upper()} ---")
                 for sol in lista:
-                    print(f"ID: {sol[0]} | Tipo: {sol[2]} | Status: {sol[6]} | Data: {sol[7]}")
+                    print(f"ID: {sol[0]} | Solicitante: {sol[1]} | Tipo: {sol[2]} | Status: {sol[6]} | Data: {sol[7]}")
 
         elif opcao == 3:
             resultado = db_obter_estatisticas("status")
@@ -247,7 +304,7 @@ def consultas_e_estatisticas():
             else:
                 print("\n--- TOTAL POR STATUS ---")
                 for linha in resultado:
-                    print(f"{linha[0]}: {linha[1]} solicitações)")
+                    print(f"{linha[0]}: {linha[1]} solicitações")
 
         elif opcao == 4:
             resultado = db_obter_estatisticas("prioridade")
@@ -256,27 +313,51 @@ def consultas_e_estatisticas():
             else:
                 print("\n--- TOTAL POR PRIORIDADE ---")
                 for linha in resultado:
-                    print(f"{linha[0]}: {linha[1]} solicitação(ões)")
+                    print(f"{linha[0]}: {linha[1]} solicitações")
+
+        elif opcao == 5:
+            if not is_admin:
+                print("\n[ACESSO NEGADO] Apenas a administração pode consultar chamados de outros usuários.")
+                continue
+
+            try:
+                user_id = int(input("Digite o ID numérico do usuário:\n"))
+            except ValueError:
+                print("ID inválido")
+                continue
+
+            lista = db_consultar_solicitacoes(filtro_tipo="usuario", valor_filtro=user_id)
+            if len(lista) == 0:
+                print(f"\nNenhuma solicitação encontrada para o Usuário ID {user_id}.")
+            else:
+                print(f"\n--- SOLICITAÇÕES DO USUÁRIO ID {user_id} ---")
+                for sol in lista:
+                    print(f"ID Chamado: {sol[0]} | Solicitante: {sol[1]} | Tipo: {sol[2]} | Status: {sol[6]} | Data: {sol[7]}")
 
         else:
             print("Opção inválida")
 
-def modificar_solicitacoes(): 
+def modificar_solicitacoes():
     chave_adicionar_solicitacoes = True
     while chave_adicionar_solicitacoes:
         nome_formatado = nome_logado[:22].ljust(22)
-        
+
+        if is_admin:
+            label_opcao2 = "Mostrar TODAS as solicitacoes  "
+        else:
+            label_opcao2 = "Mostrar MINHAS solicitacoes    "
+
         print(f"""
         ╔════════════════════════════════════════╗
         ║        A R E A   L O G A D A           ║
         ╠════════════════════════════════════════╣
-        ║  Usuário logado: {nome_formatado}║
+        ║  Usuário: {nome_formatado}║
         ╠════════════════════════════════════════╣
         ║  [1] Adicionar uma nova solicitacao    ║
-        ║  [2] Excluir uma solicitacao           ║
-        ║  [3] Mostrar solicitacoes em aberto    ║
-        ║  [4] Atualizar status                  ║
-        ║  [5] Consultas e estatísticas          ║
+        ║  [2] {label_opcao2}║
+        ║  [3] Consultas e estatísticas          ║
+        ║  [4] Excluir uma solicitacao           ║
+        ║  [5] Atualizar status (Apenas Admin)   ║
         ║  [0] Sair                              ║
         ╚════════════════════════════════════════╝
         """)
@@ -288,45 +369,42 @@ def modificar_solicitacoes():
             if resposta == 0:
                 chave_adicionar_solicitacoes = False
                 print("Saindo da conta...")
-                 
+
             elif resposta == 1:
-                adicionar_solicitacao() 
-                 
+                adicionar_solicitacao()
+
             elif resposta == 2:
-                lista = db_consultar_solicitacoes(filtro_tipo="usuario", valor_filtro=id_logado)
-                if len(lista) == 0:
-                    print("Você não tem nenhuma solicitação registrada.")
+                if is_admin:
+                    lista = db_consultar_solicitacoes()
+                    cabecalho = "MURAL DE SOLICITAÇÕES (TODAS)"
                 else:
-                    excluir_solicitacao()
+                    lista = db_consultar_solicitacoes(filtro_tipo="usuario", valor_filtro=id_logado)
+                    cabecalho = "MINHAS SOLICITAÇÕES"
+
+                if len(lista) == 0:
+                    print("Não há nenhuma solicitação registrada.")
+                else:
+                    print(f"\n--- {cabecalho} ---")
+                    for sol in lista:
+                        print(f"ID: {sol[0]} | Solicitante: {sol[1]} | Tipo: {sol[2]} | Prioridade: {sol[5]} | Status: {sol[6]} | Data: {sol[7]}")
 
             elif resposta == 3:
-                lista = db_consultar_solicitacoes(filtro_tipo="usuario", valor_filtro=id_logado)
-                if len(lista) == 0:
-                    print("Você não tem nenhuma solicitação registrada.")
-                else:
-                    print("\n--- SUAS SOLICITAÇÕES REGISTRADAS ---")
-                    for sol in lista:
-                        print(f"ID: {sol[0]} | Tipo: {sol[2]} | Prioridade: {sol[5]} | Status: {sol[6]} | Data: {sol[7]}")
+                consultas_e_estatisticas()
 
             elif resposta == 4:
-                lista = db_consultar_solicitacoes(filtro_tipo="usuario", valor_filtro=id_logado)
-                if len(lista) == 0:
-                    print("Você não tem nenhuma solicitação registrada.")
-                else:
-                    atualizar_status()
+                excluir_solicitacao()
 
             elif resposta == 5:
-                lista = db_consultar_solicitacoes(filtro_tipo="usuario", valor_filtro=id_logado)
-                if len(lista) == 0:
-                    print("Você não tem nenhuma solicitação registrada.")
-                else:
-                    consultas_e_estatisticas()
+                atualizar_status()
 
             else:
                 print("Opção inválida")
-            
+
+# ==========================================
+# MENU PRINCIPAL
+# ==========================================
 chave_para_Menu = True
-while chave_para_Menu: 
+while chave_para_Menu:
     print("""
     ╔════════════════════════════╗
     ║     SISTEMA DE ACESSO      ║
@@ -343,13 +421,13 @@ while chave_para_Menu:
     else:
         if menu_resposta == 1:
             cadastrar()
-        
+
         elif menu_resposta == 2:
             if login():
                 modificar_solicitacoes()
-        
+
         elif menu_resposta == 0:
             chave_para_Menu = False
-            print("Programa encerrado")
+            print("Programa encerrado.")
         else:
             print("Resposta inválida")

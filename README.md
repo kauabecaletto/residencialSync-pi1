@@ -17,18 +17,18 @@ Sistema CLI em Python e MySQL para gestão de manutenção condominial. Desenvol
 
 ---
 
-## Regra de prioridade
+## Calculo de prioridade
 
-A prioridade é calculada automaticamente no momento da abertura da solicitação:
+A prioridade das solicitações é definida automaticamente pelo sistema por meio de uma pontuação calculada a partir de dois fatores:
 
-| Condição | Prioridade |
-|---|---|
-| Vazamento de gás (qualquer nível) | Alta |
-| Elétrico com nível Grave ou Urgente | Alta |
-| Qualquer tipo com nível Grave ou Urgente | Alta |
-| Qualquer tipo com nível Preocupante | Média |
-| Demais casos | Baixa |
+- Alcance do problema (1 a 5)
+- Tipo de risco (1 a 5)
 
+Classificação:
+
+- Alta: Vazamento de gás ou pontuação igual ou superior a 8.
+- Média: Pontuação entre 5 e 7.
+- Baixa: Pontuação inferior a 5.
 ---
 
 ## Requisitos
